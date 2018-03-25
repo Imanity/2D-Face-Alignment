@@ -46,7 +46,6 @@ bool RandomForest::generateFromDataset(Dataset &dataset, string configFile, int 
 			forest_overlap = atof(line.substr(line.find("= ") + 2).c_str());
 		}
 	}
-	// cout << feature_num << "\t" << tree_depth << "\t" << tree_num_per_forest << "\t" << local_region_size << "\t" << forest_overlap << endl;
 	config.close();
 
 	// Get random features
@@ -85,6 +84,28 @@ bool RandomForest::generateFromDataset(Dataset &dataset, string configFile, int 
 	time(&end_time);
 	cout << "Constructing finished. Time Ellapse: " << difftime(end_time, start_time) << "s" << endl;
 	return true;
+}
+
+bool RandomForest::generateFromFile(std::string filename) {
+	fstream inFile(filename, ios::in);
+	int depth;
+	string line;
+
+	// Get forest depth
+	getline(inFile, line);
+	depth = atoi(line.substr(line.find(": ") + 2).c_str());
+	cout << depth << endl;
+
+	while (getline(inFile, line)) {
+		// Get tree id
+		int treeId = atoi(line.substr(line.find(" ") + 1).c_str());
+		for (int i = 0; i < (int)pow(2, depth) - 1; ++i) {
+			getline(inFile, line);
+		}
+		cout << treeId << endl;
+	}
+	inFile.close();
+	return false;
 }
 
 DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Point2D, Point2D>> &features, vector<vector<int>> &vals, vector<int> &imgIds, int feature_point_id, int depth) {

@@ -33,6 +33,7 @@ public:
 	~RandomForest();
 
 	bool generateFromDataset(Dataset &dataset, std::string configFile, int stage_id, int feature_point_id);
+	bool generateFromFile(std::string filename);
 
 	DecisionTree generateDecisionTree(Dataset &dataset, std::vector<std::pair<Point2D, Point2D>> &features, std::vector<std::vector<int>> &vals, std::vector<int> &imgIds, int feature_point_id, int depth);
 
