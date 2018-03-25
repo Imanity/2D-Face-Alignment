@@ -21,10 +21,27 @@
     <ClCompile Include="Dataset.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="RandomForest.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dataset.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="RandomForest.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config\helen.cfg">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="config\helen_filenames.cfg">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="config\train.cfg">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
