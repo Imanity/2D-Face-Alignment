@@ -36,9 +36,10 @@ public:
 	bool generateFromFile(std::string filename);
 
 	DecisionTree generateDecisionTree(Dataset &dataset, std::vector<std::pair<Point2D, Point2D>> &features, std::vector<std::vector<int>> &vals, std::vector<int> &imgIds, int feature_point_id, int depth);
+	DecisionTree generateDecisionTreeFromVector(std::vector<std::vector<double>> &node_data, int depth, int root_pos);
 
 	void outputToFile(std::string filename);
 
-private:
+public:
 	std::vector<DecisionTree> trees;
 };

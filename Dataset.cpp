@@ -12,6 +12,7 @@ bool Dataset::readFromFile(string configFile) {
 	cout << "Reading dataset..." << endl;
 	time_t start_time, end_time;
 	time(&start_time);
+
 	// Resolve config
 	string ImgFolderPath, ImgNameFile;
 	fstream config(configFile, ios::in);

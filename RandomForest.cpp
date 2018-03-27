@@ -88,24 +88,38 @@ bool RandomForest::generateFromDataset(Dataset &dataset, string configFile, int 
 
 bool RandomForest::generateFromFile(std::string filename) {
 	fstream inFile(filename, ios::in);
+	if (!inFile) {
+		cerr << "Error: Model file " << filename << " not exist." << endl;
+		return false;
+	}
+
 	int depth;
 	string line;
 
 	// Get forest depth
 	getline(inFile, line);
 	depth = atoi(line.substr(line.find(": ") + 2).c_str());
-	cout << depth << endl;
 
 	while (getline(inFile, line)) {
 		// Get tree id
 		int treeId = atoi(line.substr(line.find(" ") + 1).c_str());
+		vector<vector<double>> node_data;
 		for (int i = 0; i < (int)pow(2, depth) - 1; ++i) {
+			// Get node data
 			getline(inFile, line);
+			vector<double> single_node;
+			for (int j = 0; j < 4; ++j) {
+				single_node.push_back(atof(line.substr(0, line.find(" ")).c_str()));
+				line = line.substr(line.find(" ") + 1);
+			}
+			single_node.push_back(atof(line.c_str()));
+			node_data.push_back(single_node);
 		}
-		cout << treeId << endl;
+		trees.push_back(generateDecisionTreeFromVector(node_data, depth, 0));
 	}
 	inFile.close();
-	return false;
+
+	return true;
 }
 
 DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Point2D, Point2D>> &features, vector<vector<int>> &vals, vector<int> &imgIds, int feature_point_id, int depth) {
@@ -163,6 +177,18 @@ DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Po
 	}
 	tree->left_child = generateDecisionTree(dataset, features, vals, leftIds, feature_point_id, depth - 1);
 	tree->right_child = generateDecisionTree(dataset, features, vals, rightIds, feature_point_id, depth - 1);
+	return tree;
+}
+
+DecisionTree RandomForest::generateDecisionTreeFromVector(std::vector<std::vector<double>> &node_data, int depth, int root_pos) {
+	if (depth <= 0) {
+		return NULL;
+	}
+	DecisionTree tree = new TreeNode(depth);
+	tree->feature = make_pair(Point2D(node_data[root_pos][0], node_data[root_pos][1]), Point2D(node_data[root_pos][2], node_data[root_pos][3]));
+	tree->threshold = node_data[root_pos][4];
+	tree->left_child = generateDecisionTreeFromVector(node_data, depth - 1, 2 * root_pos + 1);
+	tree->right_child = generateDecisionTreeFromVector(node_data, depth - 1, 2 * root_pos + 2);
 	return tree;
 }
 
