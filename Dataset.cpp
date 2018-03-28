@@ -96,6 +96,34 @@ double Dataset::calculateVariance(std::vector<int> &ids, int feature_point_id) {
 	return Ex_2 - Ex * Ex + Ey_2 - Ey * Ey;
 }
 
+void Dataset::generate_S_0(vector<Point2D> &S_0, string configFile) {
+	// Get config
+	int feature_point_num;
+	fstream config(configFile, ios::in);
+	if (!config) {
+		cerr << "Error: Config not exist." << endl;
+		return;
+	}
+	string line;
+	while (getline(config, line)) {
+		if (line.find("feature_point_num") != string::npos) {
+			feature_point_num = atoi(line.substr(line.find("= ") + 2).c_str());
+		}
+	}
+
+	// Get average landmark pos
+	for (int i = 0; i < feature_point_num; ++i) {
+		double x = 0.0, y = 0.0;
+		for (int j = 0; j < data.size(); ++j) {
+			x += data[j].groundTruth[i].x / (double)data[j].img_w;
+			y += data[j].groundTruth[i].y / (double)data[j].img_h;
+		}
+		x /= (double)data.size();
+		y /= (double)data.size();
+		S_0.push_back(Point2D(x, y));
+	}
+}
+
 SingleData::SingleData() {
 }
 
@@ -107,6 +135,9 @@ bool SingleData::readFromFile(string filename) {
 
 	// Read image
 	imagePath = imgFilename;
+	cv::Mat_<uchar> image = imread(imagePath, 0);
+	img_w = image.cols;
+	img_h = image.rows;
 
 	// Read pts
 	fstream ptsFile(ptsFilename, ios::in);

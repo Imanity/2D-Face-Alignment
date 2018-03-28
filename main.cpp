@@ -2,6 +2,7 @@
 
 #include "Dataset.h"
 #include "RandomForest.h"
+#include "Regressor.h"
 
 using namespace std;
 
@@ -14,6 +15,9 @@ int main() {
 
 	vector<vector<RandomForest>> forests;
 	readForest(forests);
+
+	Regressor regressor("config/train.cfg");
+	regressor.train(helen, forests);
 
 	return 0;
 }

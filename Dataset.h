@@ -23,9 +23,10 @@ public:
 	void shapeIndexFeature(std::vector<std::pair<Point2D, Point2D>> &features, std::vector<int> &vals, int id);
 	Point2D getFeaturePoint(int id);
 
-private:
+public:
 	std::string imagePath;
 	std::vector<Point2D> groundTruth;
+	int img_w, img_h;
 };
 
 class Dataset {
@@ -37,7 +38,8 @@ public:
 	int size();
 	void shapeIndexFeature(std::vector<std::pair<Point2D, Point2D>> &features, std::vector<std::vector<int>> &vals, int id);
 	double calculateVariance(std::vector<int> &ids, int feature_point_id);
+	void generate_S_0(std::vector<Point2D> &S_0, std::string configFile);
 
-private:
+public:
 	std::vector<SingleData> data;
 };

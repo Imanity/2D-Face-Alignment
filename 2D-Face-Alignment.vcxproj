@@ -152,10 +152,14 @@
     <ClCompile Include="Dataset.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RandomForest.cpp" />
+    <ClCompile Include="Regressor.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dataset.h" />
     <ClInclude Include="RandomForest.h" />
+    <ClInclude Include="Regressor.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="config\helen.cfg" />
