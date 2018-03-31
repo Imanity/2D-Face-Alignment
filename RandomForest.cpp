@@ -8,88 +8,27 @@ RandomForest::RandomForest() {
 
 RandomForest::~RandomForest() {}
 
-bool RandomForest::generateFromDataset(Dataset &dataset, string configFile, int stage_id, int feature_point_id) {
-	cout << "Constructing Random Forest..." << endl;
-	time_t start_time, end_time;
-	time(&start_time);
-	// Get config
-	int feature_num, tree_depth, tree_num_per_forest;
-	double local_region_size, forest_overlap;
-	fstream config(configFile, ios::in);
-	if (!config) {
-		cerr << "Error: Config not exist." << endl;
-		return false;
-	}
-	string line;
-	while (getline(config, line)) {
-		if (line.find("feature_num") != string::npos) {
-			feature_num = atoi(line.substr(line.find("= ") + 2).c_str());
-		}
-		if (line.find("tree_depth") != string::npos) {
-			tree_depth = atoi(line.substr(line.find("= ") + 2).c_str());
-		}
-		if (line.find("tree_num_per_forest") != string::npos) {
-			tree_num_per_forest = atoi(line.substr(line.find("= ") + 2).c_str());
-		}
-		if (line.find("local_region_size") != string::npos) {
-			int pos1 = line.find("{ ") + 2, pos2 = line.find(", ");
-			for (int i = 0; i < stage_id; ++i) {
-				pos1 = pos2 + 2;
-				pos2 = line.find(", ", pos1 + 1);
-			}
-			if (pos2 == string::npos) {
-				pos2 = line.size();
-			}
-			local_region_size = atof(line.substr(pos1, pos2 - pos1).c_str());
-		}
-		if (line.find("forest_overlap") != string::npos) {
-			forest_overlap = atof(line.substr(line.find("= ") + 2).c_str());
-		}
-	}
-	config.close();
-
-	// Get random features
-	time_t currTime = time(0);
-	cv::RNG rd(currTime);
-	vector<pair<Point2D, Point2D>> features;
-	for (int i = 0; i < feature_num; ++i) {
-		double x1, y1, x2, y2;
-		do {
-			x1 = rd.uniform(-local_region_size, local_region_size);
-			y1 = rd.uniform(-local_region_size, local_region_size);
-		} while (x1 * x1 + y1 * y1 > local_region_size * local_region_size);
-		do {
-			x2 = rd.uniform(-local_region_size, local_region_size);
-			y2 = rd.uniform(-local_region_size, local_region_size);
-		} while (x2 * x2 + y2 * y2 > local_region_size * local_region_size);
-		Point2D p1(x1, y1), p2(x2, y2);
-		features.push_back(make_pair(p1, p2));
-	}
-	vector<vector<int>> vals;
-	dataset.shapeIndexFeature(features, vals, feature_point_id);
-
+bool RandomForest::generateFromDataset(Dataset &dataset, Params_ &params, vector<pair<Point2D, Point2D>> &features, vector<vector<vector<int>>> &img_vals, int landmark_id) {
 	// Build Decision Trees
-	int step = floor(((double)dataset.size()) * forest_overlap / (tree_num_per_forest - 1));
-	for (int i = 0; i < tree_num_per_forest; ++i) {
+	int step = floor(((double)dataset.data.size()) * params.forest_overlap / (params.tree_num_per_forest - 1));
+	for (int i = 0; i < params.tree_num_per_forest; ++i) {
 		vector<int> imgIds;
 		int start_index = i * step;
-		int end_index = dataset.size() - (tree_num_per_forest - i - 1) * step;
+		int end_index = dataset.data.size() - (params.tree_num_per_forest - i - 1) * step;
 		for (int j = start_index; j < end_index; ++j) {
 			imgIds.push_back(j);
 		}
-		DecisionTree t = generateDecisionTree(dataset, features, vals, imgIds, feature_point_id, tree_depth);
+		DecisionTree t = generateDecisionTree(dataset, params, features, imgIds, img_vals, landmark_id, params.tree_depth);
 		trees.push_back(t);
 	}
 
-	time(&end_time);
-	cout << "Constructing finished. Time Ellapse: " << difftime(end_time, start_time) << "s" << endl;
 	return true;
 }
 
 bool RandomForest::generateFromFile(std::string filename) {
 	fstream inFile(filename, ios::in);
 	if (!inFile) {
-		cerr << "Error: Model file " << filename << " not exist." << endl;
+		cerr << "Error: Forest file " << filename << " not exist." << endl;
 		return false;
 	}
 
@@ -122,7 +61,7 @@ bool RandomForest::generateFromFile(std::string filename) {
 	return true;
 }
 
-DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Point2D, Point2D>> &features, vector<vector<int>> &vals, vector<int> &imgIds, int feature_point_id, int depth) {
+DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, Params_ &params, vector<pair<Point2D, Point2D>> &features, vector<int> &imgIds, vector<vector<vector<int>>> &img_vals, int landmark_id, int depth) {
 	if (depth < 1 || !imgIds.size()) {
 		return NULL;
 	}
@@ -143,18 +82,18 @@ DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Po
 		// Get min and max value of feature i
 		int minVal = INT_MAX, maxVal = -INT_MAX;
 		for (int j = 0; j < imgIds.size(); ++j) {
-			if (vals[imgIds[j]][i] < minVal) {
-				minVal = vals[imgIds[j]][i];
+			if (img_vals[imgIds[j]][landmark_id][i] < minVal) {
+				minVal = img_vals[imgIds[j]][landmark_id][i];
 			}
-			if (vals[imgIds[j]][i] > maxVal) {
-				maxVal = vals[imgIds[j]][i];
+			if (img_vals[imgIds[j]][landmark_id][i] > maxVal) {
+				maxVal = img_vals[imgIds[j]][landmark_id][i];
 			}
 		}
 
 		// Randomly get threshold between min and max
 		int split_threshold = minVal + (int)((0.5 + 0.8 * (rd.uniform(0.0, 1.0) - 0.5)) * (double)(maxVal - minVal));
 		for (int j = 0; j < imgIds.size(); ++j) {
-			if (vals[imgIds[j]][i] < split_threshold) {
+			if (img_vals[imgIds[j]][landmark_id][i] < split_threshold) {
 				tmpLeftIds.push_back(imgIds[j]);
 			} else {
 				tmpRightIds.push_back(imgIds[j]);
@@ -162,8 +101,8 @@ DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Po
 		}
 
 		// Calculate variance
-		double var_l = tmpLeftIds.size() ? dataset.calculateVariance(tmpLeftIds, feature_point_id) : 0.0;
-		double var_r = tmpRightIds.size() ? dataset.calculateVariance(tmpRightIds, feature_point_id) : 0.0;
+		double var_l = tmpLeftIds.size() ? dataset.calculateVariance(tmpLeftIds, landmark_id) : 0.0;
+		double var_r = tmpRightIds.size() ? dataset.calculateVariance(tmpRightIds, landmark_id) : 0.0;
 		double var_tmp = -(double)tmpLeftIds.size() * var_l - (double)tmpRightIds.size() * var_r;
 
 		// Select feature
@@ -172,11 +111,12 @@ DecisionTree RandomForest::generateDecisionTree(Dataset &dataset, vector<pair<Po
 			leftIds = tmpLeftIds;
 			rightIds = tmpRightIds;
 			tree->feature = features[i];
+			tree->feature_id = i;
 			tree->threshold = split_threshold;
 		}
 	}
-	tree->left_child = generateDecisionTree(dataset, features, vals, leftIds, feature_point_id, depth - 1);
-	tree->right_child = generateDecisionTree(dataset, features, vals, rightIds, feature_point_id, depth - 1);
+	tree->left_child = generateDecisionTree(dataset, params, features, leftIds, img_vals, landmark_id, depth - 1);
+	tree->right_child = generateDecisionTree(dataset, params, features, rightIds, img_vals, landmark_id, depth - 1);
 	return tree;
 }
 

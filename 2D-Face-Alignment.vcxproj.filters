@@ -13,6 +13,18 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\liblinear">
+      <UniqueIdentifier>{aecfea6d-4bee-4065-a5e0-0b5823e79710}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\liblinear">
+      <UniqueIdentifier>{4c187ac7-351c-4086-870b-1627c727cc5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\liblinear\blas">
+      <UniqueIdentifier>{ec44c4f4-2e19-4f34-88af-58b6e7dad719}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\liblinear\blas">
+      <UniqueIdentifier>{db9af1af-8df2-4612-88ac-c42b0c782c5b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -30,6 +42,24 @@
     <ClCompile Include="Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="liblinear\blas\daxpy.c">
+      <Filter>源文件\liblinear\blas</Filter>
+    </ClCompile>
+    <ClCompile Include="liblinear\blas\ddot.c">
+      <Filter>源文件\liblinear\blas</Filter>
+    </ClCompile>
+    <ClCompile Include="liblinear\blas\dnrm2.c">
+      <Filter>源文件\liblinear\blas</Filter>
+    </ClCompile>
+    <ClCompile Include="liblinear\blas\dscal.c">
+      <Filter>源文件\liblinear\blas</Filter>
+    </ClCompile>
+    <ClCompile Include="liblinear\linear.cpp">
+      <Filter>源文件\liblinear</Filter>
+    </ClCompile>
+    <ClCompile Include="liblinear\tron.cpp">
+      <Filter>源文件\liblinear</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dataset.h">
@@ -43,6 +73,18 @@
     </ClInclude>
     <ClInclude Include="Utils.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="liblinear\linear.h">
+      <Filter>头文件\liblinear</Filter>
+    </ClInclude>
+    <ClInclude Include="liblinear\tron.h">
+      <Filter>头文件\liblinear</Filter>
+    </ClInclude>
+    <ClInclude Include="liblinear\blas\blas.h">
+      <Filter>头文件\liblinear\blas</Filter>
+    </ClInclude>
+    <ClInclude Include="liblinear\blas\blasp.h">
+      <Filter>头文件\liblinear\blas</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -103,10 +103,14 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\Environment\opencv\build\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_DEPRECATE %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>D:\Environment\opencv\build\x64\vc14\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_world330d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -139,6 +143,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>D:\Environment\opencv\build\include</AdditionalIncludeDirectories>
       <OpenMPSupport>true</OpenMPSupport>
+      <AdditionalOptions>/D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_DEPRECATE %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,6 +156,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dataset.cpp" />
+    <ClCompile Include="liblinear\blas\daxpy.c" />
+    <ClCompile Include="liblinear\blas\ddot.c" />
+    <ClCompile Include="liblinear\blas\dnrm2.c" />
+    <ClCompile Include="liblinear\blas\dscal.c" />
+    <ClCompile Include="liblinear\linear.cpp" />
+    <ClCompile Include="liblinear\tron.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RandomForest.cpp" />
     <ClCompile Include="Regressor.cpp" />
@@ -158,6 +169,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Dataset.h" />
+    <ClInclude Include="liblinear\blas\blas.h" />
+    <ClInclude Include="liblinear\blas\blasp.h" />
+    <ClInclude Include="liblinear\linear.h" />
+    <ClInclude Include="liblinear\tron.h" />
     <ClInclude Include="RandomForest.h" />
     <ClInclude Include="Regressor.h" />
     <ClInclude Include="Utils.h" />

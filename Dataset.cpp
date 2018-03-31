@@ -8,7 +8,7 @@ Dataset::Dataset() {
 
 Dataset::~Dataset() {}
 
-bool Dataset::readFromFile(string configFile) {
+bool Dataset::readFromFile(string configFile, bool BBOX_FLAG) {
 	cout << "Reading dataset..." << endl;
 	time_t start_time, end_time;
 	time(&start_time);
@@ -51,39 +51,42 @@ bool Dataset::readFromFile(string configFile) {
 	filenames.close();
 
 	// Read images
+	CascadeClassifier haar_cascade;
+	haar_cascade.load("model/haarcascade_frontalface_alt2.xml");
 	for (int i = 0; i < imgNames.size(); ++i) {
 		SingleData singleData;
-		if (!singleData.readFromFile(ImgFolderPath + imgNames[i])) {
+		if (!singleData.readFromFile(ImgFolderPath + imgNames[i], haar_cascade, BBOX_FLAG)) {
 			cerr << "Error: Image " << imgNames[i] << " read failed." << endl;
 			continue;
 		}
-		data.push_back(singleData);
+		if (singleData.isValid) {
+			data.push_back(singleData);
+		}
 	}
 
+	// Generate S0
+	generate_S_0();
+
 	time(&end_time);
-	cout << "Reading finished. Time Ellapse: " << difftime(end_time, start_time) << "s" << endl;
+	cout << data.size() << " images read. Time Ellapse: " << difftime(end_time, start_time) << "s" << endl << endl;
 	return true;
 }
 
-int Dataset::size() {
-	return data.size();
-}
-
-void Dataset::shapeIndexFeature(vector<pair<Point2D, Point2D>> &features, vector<vector<int>> &vals, int id) {
-	vals.clear();
+void Dataset::shapeIndexFeature(std::vector<std::vector<Point2D>> &S, std::vector<Point2D> &S_0, vector<int> &special_point_id, vector<pair<Point2D, Point2D>> &features, vector<vector<vector<int>>> &img_vals) {
+	img_vals.clear();
 	for (int i = 0; i < data.size(); ++i) {
-		vector<int> v;
-		data[i].shapeIndexFeature(features, v, id);
-		vals.push_back(v);
+		vector<vector<int>> v;
+		data[i].shapeIndexFeature(S[i], S_0, special_point_id, features, v);
+		img_vals.push_back(v);
 	}
 }
 
-double Dataset::calculateVariance(std::vector<int> &ids, int feature_point_id) {
+double Dataset::calculateVariance(std::vector<int> &ids, int landmark_id) {
 	double Ex_2 = 0, Ey_2 = 0, Ex = 0, Ey = 0;
 	for (int i = 0; i < ids.size(); ++i) {
 		int id = ids[i];
-		double x = data[id].getFeaturePoint(feature_point_id).x;
-		double y = data[id].getFeaturePoint(feature_point_id).y;
+		double x = data[id].groundTruth[landmark_id].x;
+		double y = data[id].groundTruth[landmark_id].y;
 		Ex += x;
 		Ey += y;
 		Ex_2 += x * x;
@@ -96,27 +99,17 @@ double Dataset::calculateVariance(std::vector<int> &ids, int feature_point_id) {
 	return Ex_2 - Ex * Ex + Ey_2 - Ey * Ey;
 }
 
-void Dataset::generate_S_0(vector<Point2D> &S_0, string configFile) {
-	// Get config
-	int feature_point_num;
-	fstream config(configFile, ios::in);
-	if (!config) {
-		cerr << "Error: Config not exist." << endl;
-		return;
-	}
-	string line;
-	while (getline(config, line)) {
-		if (line.find("feature_point_num") != string::npos) {
-			feature_point_num = atoi(line.substr(line.find("= ") + 2).c_str());
-		}
-	}
+void Dataset::generate_S_0() {
+	S_0.clear();
+
+	int landmark_num = data[0].groundTruth.size();
 
 	// Get average landmark pos
-	for (int i = 0; i < feature_point_num; ++i) {
+	for (int i = 0; i < landmark_num; ++i) {
 		double x = 0.0, y = 0.0;
 		for (int j = 0; j < data.size(); ++j) {
-			x += data[j].groundTruth[i].x / (double)data[j].img_w;
-			y += data[j].groundTruth[i].y / (double)data[j].img_h;
+			x += data[j].groundTruth[i].x;
+			y += data[j].groundTruth[i].y;
 		}
 		x /= (double)data.size();
 		y /= (double)data.size();
@@ -124,12 +117,11 @@ void Dataset::generate_S_0(vector<Point2D> &S_0, string configFile) {
 	}
 }
 
-SingleData::SingleData() {
-}
+SingleData::SingleData() {}
 
 SingleData::~SingleData() {}
 
-bool SingleData::readFromFile(string filename) {
+bool SingleData::readFromFile(string filename, CascadeClassifier &haar_cascade, bool BBOX_FLAG) {
 	string imgFilename = filename + ".jpg";
 	string ptsFilename = filename + ".pts";
 
@@ -150,36 +142,139 @@ bool SingleData::readFromFile(string filename) {
 	for (int i = 0; i < n_points; ++i) {
 		double x, y;
 		ptsFile >> x >> y;
-		groundTruth.push_back(Point2D(x, y));
+		landmarks.push_back(Point2D(x, y));
 	}
 	ptsFile.close();
+
+	// Get boundingbox
+	if (BBOX_FLAG) {
+		vector<Rect> faces;
+		haar_cascade.detectMultiScale(image, faces, 1.1, 2, 0, Size(30, 30));
+		
+		if (!faces.size()) {
+			isValid = false;
+		}
+		else {
+			isValid = false;
+			for (int i = 0; i < faces.size(); ++i) {
+				Rect faceRec = faces[i];
+				if (isShapeInRect(landmarks, faceRec)) {
+					isValid = true;
+					bbox = faceRec;
+					break;
+				}
+			}
+		}
+
+		stringstream bbox_filename;
+		bbox_filename << "model/boundingbox/" << filename.substr(filename.find_last_of("\\") + 1) << ".bbox";
+		fstream fout(bbox_filename.str(), ios::out);
+		if (isValid) {
+			fout << 1 << endl << bbox.x << " " << bbox.y << " " << bbox.width << " " << bbox.height << endl;
+		}
+		else {
+			fout << 0 << endl;
+		}
+		fout.close();
+	}
+	else {
+		stringstream bbox_filename;
+		bbox_filename << "model/boundingbox/" << filename.substr(filename.find_last_of("\\") + 1) << ".bbox";
+		fstream fin(bbox_filename.str(), ios::in);
+		if (!fin) {
+			cerr << "Boundingbox " << bbox_filename.str() << " not exist!" << endl;
+			return false;
+		}
+		int isV = 0;
+		fin >> isV;
+		if (isV == 1) {
+			isValid = true;
+			int x = 0, y = 0, w = 0, h = 0;
+			fin >> x >> y >> w >> h;
+			bbox.x = x;
+			bbox.y = y;
+			bbox.width = w;
+			bbox.height = h;
+		}
+		else {
+			isValid = false;
+			fin.close();
+			return true;
+		}
+		fin.close();
+	}
+
+	// Get ground truth
+	for (int i = 0; i < n_points; ++i) {
+		double x = (landmarks[i].x - (double)bbox.x - (double)bbox.width / 2.0) / ((double)bbox.width / 2.0);
+		double y = (landmarks[i].y - (double)bbox.y - (double)bbox.height / 2.0) / ((double)bbox.height / 2.0);
+		groundTruth.push_back(Point2D(x, y));
+	}
+	
 	return true;
 }
 
-void SingleData::shapeIndexFeature(vector<pair<Point2D, Point2D>> &features, vector<int> &vals, int id) {
+void SingleData::shapeIndexFeature(std::vector<Point2D> &S, std::vector<Point2D> &S_0, vector<int> &special_point_id, vector<pair<Point2D, Point2D>> &features, vector<vector<int>> &vals) {
 	vals.clear();
 	cv::Mat_<uchar> image = imread(imagePath, 0);
-	for (int i = 0; i < features.size(); ++i) {
-		double x1 = features[i].first.x;
-		double y1 = features[i].first.y;
-		double x2 = features[i].second.x;
-		double y2 = features[i].second.y;
-		int x_1 = x1 * (double)image.cols + groundTruth[id].x;
-		int y_1 = y1 * (double)image.rows + groundTruth[id].y;
-		x_1 = x_1 < 0 ? 0 : x_1;
-		y_1 = y_1 < 0 ? 0 : y_1;
-		x_1 = x_1 >= image.cols ? image.cols - 1 : x_1;
-		y_1 = y_1 >= image.rows ? image.rows - 1 : y_1;
-		int x_2 = x2 * (double)image.cols + groundTruth[id].x;
-		int y_2 = y2 * (double)image.rows + groundTruth[id].y;
-		x_2 = x_2 < 0 ? 0 : x_2;
-		y_2 = y_2 < 0 ? 0 : y_2;
-		x_2 = x_2 >= image.cols ? image.cols - 1 : x_2;
-		y_2 = y_2 >= image.rows ? image.rows - 1 : y_2;
-		vals.push_back((int)image(y_1, x_1) - (int)image(y_2, x_2));
+	Transform_2D tran = getSimilarityTransform(S, S_0, special_point_id);
+
+	for (int i = 0; i < groundTruth.size(); ++i) {
+		vector<int> v;
+		for (int j = 0; j < features.size(); ++j) {
+			double x1 = features[j].first.x, y1 = features[j].first.y;
+			double x2 = features[j].second.x, y2 = features[j].second.y;
+
+			Point2D d1 = transformPoint(tran, Point2D(x1, y1));
+			Point2D d2 = transformPoint(tran, Point2D(x2, y2));
+
+			int x_1 = (d1.x + S[i].x) * (double)bbox.width / 2.0 + (double)bbox.x + (double)bbox.width / 2.0;
+			int y_1 = (d1.y + S[i].y) * (double)bbox.height / 2.0 + (double)bbox.y + (double)bbox.height / 2.0;
+			x_1 = x_1 < 0 ? 0 : x_1;
+			y_1 = y_1 < 0 ? 0 : y_1;
+			x_1 = x_1 >= image.cols ? (image.cols - 1) : x_1;
+			y_1 = y_1 >= image.rows ? (image.rows - 1) : y_1;
+
+			int x_2 = (d2.x + S[i].x) * (double)bbox.width / 2.0 + (double)bbox.x + (double)bbox.width / 2.0;
+			int y_2 = (d2.y + S[i].y) * (double)bbox.height / 2.0 + (double)bbox.y + (double)bbox.height / 2.0;
+			x_2 = x_2 < 0 ? 0 : x_2;
+			y_2 = y_2 < 0 ? 0 : y_2;
+			x_2 = x_2 >= image.cols ? (image.cols - 1) : x_2;
+			y_2 = y_2 >= image.rows ? (image.rows - 1) : y_2;
+
+			v.push_back((int)image(y_1, x_1) - (int)image(y_2, x_2));
+		}
+		vals.push_back(v);
 	}
 }
 
-Point2D SingleData::getFeaturePoint(int id) {
-	return Point2D(groundTruth[id]);
+bool isShapeInRect(vector<Point2D> &shape, cv::Rect &rect) {
+	double sum_x = 0.0, sum_y = 0.0;
+	double max_x = -DBL_MAX, min_x = DBL_MAX, max_y = -DBL_MAX, min_y = DBL_MAX;
+	for (int i = 0; i < shape.size(); i++) {
+		if (shape[i].x > max_x)
+			max_x = shape[i].x;
+		if (shape[i].x < min_x)
+			min_x = shape[i].x;
+		if (shape[i].y > max_y)
+			max_y = shape[i].y;
+		if (shape[i].y < min_y)
+			min_y = shape[i].y;
+
+		sum_x += shape[i].x;
+		sum_y += shape[i].y;
+	}
+	sum_x /= shape.size();
+	sum_y /= shape.size();
+
+	if ((max_x - min_x) > rect.width * 1.5)
+		return false;
+	if ((max_y - min_y) > rect.height * 1.5)
+		return false;
+	if (std::abs(sum_x - (rect.x + rect.width / 2.0)) > rect.width / 2.0)
+		return false;
+	if (std::abs(sum_y - (rect.y + rect.height / 2.0)) > rect.height / 2.0)
+		return false;
+
+	return true;
 }

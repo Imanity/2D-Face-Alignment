@@ -10,17 +10,21 @@
 
 class Regressor {
 public:
-	Regressor(std::string config_file);
+	Regressor(Params_ params_);
 	~Regressor();
 
-	void train(Dataset &dataset, std::vector<std::vector<RandomForest>> &forests);
+	void Train(Dataset &dataset);
+	void readModels();
+	void predictImage(std::string img_path);
 
 private:
-	std::string configFile;
+	Params_ params;
 
 	std::vector<std::vector<struct model*>>	linear_model_x;
 	std::vector<std::vector<struct model*>>	linear_model_y;
+	std::vector<std::vector<RandomForest>> forests;
 
 private:
-	int classifyImgByTree(DecisionTree tree, cv::Mat_<uchar> &image, Point2D now_landmark_pos);
+	int classifyImgByTree(DecisionTree tree, std::vector<int> &img_vals);
+	int classifyImgByTree(DecisionTree tree, cv::Mat_<uchar> &image, cv::Rect &bbox, Point2D &landmark_pos, Transform_2D &t);
 };

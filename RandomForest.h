@@ -17,6 +17,7 @@ public:
 	TreeNode *left_child;
 	TreeNode *right_child;
 	int threshold;
+	int feature_id;
 	std::pair<Point2D, Point2D> feature;
 	int depth;
 	
@@ -32,10 +33,10 @@ public:
 	RandomForest();
 	~RandomForest();
 
-	bool generateFromDataset(Dataset &dataset, std::string configFile, int stage_id, int feature_point_id);
+	bool generateFromDataset(Dataset &dataset, Params_ &params, std::vector<std::pair<Point2D, Point2D>> &features, std::vector<std::vector<std::vector<int>>> &img_vals, int landmark_id);
 	bool generateFromFile(std::string filename);
 
-	DecisionTree generateDecisionTree(Dataset &dataset, std::vector<std::pair<Point2D, Point2D>> &features, std::vector<std::vector<int>> &vals, std::vector<int> &imgIds, int feature_point_id, int depth);
+	DecisionTree generateDecisionTree(Dataset &dataset, Params_ &params, std::vector<std::pair<Point2D, Point2D>> &features, std::vector<int> &imgIds, std::vector<std::vector<std::vector<int>>> &img_vals, int landmark_id, int depth);
 	DecisionTree generateDecisionTreeFromVector(std::vector<std::vector<double>> &node_data, int depth, int root_pos);
 
 	void outputToFile(std::string filename);
