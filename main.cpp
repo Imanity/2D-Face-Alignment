@@ -16,7 +16,7 @@ int main() {
 	Regressor regressor(params);
 	// regressor.Train(helen);
 	regressor.readModels();
-	regressor.predictImage("E:/5.jpg");
+	regressor.predictImage("F:/Datasets/Helen/helen/testset/3251963224_1.jpg");
 	
 	return 0;
 }

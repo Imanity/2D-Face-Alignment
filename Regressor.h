@@ -16,6 +16,7 @@ public:
 	void Train(Dataset &dataset);
 	void readModels();
 	void predictImage(std::string img_path);
+	void predictImage(std::string img_path, cv::Rect bbox);
 
 private:
 	Params_ params;

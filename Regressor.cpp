@@ -251,6 +251,61 @@ void Regressor::predictImage(string img_path) {
 	showImgWithLandmarks(img_path, S, faces, max_area_bbox_id);
 }
 
+void Regressor::predictImage(string img_path, cv::Rect bbox) {
+	cv::Mat_<uchar> image = imread(img_path, 0);
+
+	// Get S_0
+	vector<Point2D> S_0, S;
+	fstream fin("model/S_0.mdl", ios::in);
+	if (!fin) {
+		cerr << "S_0 model not exist!" << endl;
+		return;
+	}
+	for (int i = 0; i < params.landmark_num; ++i) {
+		double x, y;
+		fin >> x >> y;
+		S_0.push_back(Point2D(x, y));
+	}
+	S = S_0;
+
+	// Cascade regression
+	int leaf_num_per_tree = pow(2.0, params.tree_depth - 1);
+	for (int stage_id = 0; stage_id < params.stage_num; ++stage_id) {
+		// Get Image Feature
+		struct feature_node *binary_feature;
+		binary_feature = new feature_node[params.tree_num_per_forest * params.landmark_num + 1];
+		int index = 1, f_id = 0;
+		Transform_2D tran = getSimilarityTransform(S, S_0, params.special_point_id);
+		for (int j = 0; j < params.landmark_num; ++j) {
+			for (int k = 0; k < params.tree_num_per_forest; ++k) {
+				int leaf_id = 0;
+				DecisionTree tree = forests[stage_id][j].trees[k];
+				leaf_id = classifyImgByTree(tree, image, bbox, S[j], tran);
+				binary_feature[f_id].index = index + k * leaf_num_per_tree + leaf_id;
+				binary_feature[f_id].value = 1.0;
+				f_id++;
+			}
+			index += leaf_num_per_tree * params.tree_num_per_forest;
+		}
+		binary_feature[params.tree_num_per_forest * params.landmark_num].index = -1;
+		binary_feature[params.tree_num_per_forest * params.landmark_num].value = -1.0;
+
+		// Predict according to feature
+		for (int j = 0; j < params.landmark_num; ++j) {
+			double deltaS_x = predict(linear_model_x[stage_id][j], binary_feature);
+			double deltaS_y = predict(linear_model_y[stage_id][j], binary_feature);
+			Point2D deltaS = transformPoint(tran, Point2D(deltaS_x, deltaS_y));
+			S[j].x += deltaS.x;
+			S[j].y += deltaS.y;
+		}
+	}
+
+	// Show image
+	vector<Rect> faces;
+	faces.push_back(bbox);
+	showImgWithLandmarks(img_path, S, faces, 0);
+}
+
 void Regressor::readModels() {
 	cout << "Reading Model..." << endl;
 	time_t start_time, end_time;
