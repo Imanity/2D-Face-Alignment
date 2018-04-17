@@ -14,26 +14,23 @@ Blue rectangle is the bounding box of face, red points are 68 landmarks
 
 ### Trainset
 
-The trainset Helen can be downloaded from ![Here](https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/)
+The trainset Helen can be downloaded from [Here](https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/)
 
 ### Training
 
-##### Code Settings
+#### Code Settings
 
 In main.cpp, comment/uncomment the main function as following:
 
 ![Train](/gallary/main_training.png)
 
-##### Config Settings
+#### Config Settings
 
 Set the configs files as following:
 
 * config/helen.cfg
 
-'''
-ImgFolderPath = "E:\helen\trainset\"
-ImgNameFile = "config\helen_filenames.cfg"
-'''
+![Helen_cfg](/gallary/helen_cfg.png)
 
 ImgFolderPath: Folder which store the trainset images
 
@@ -41,16 +38,7 @@ ImgNameFile: File which store the filenames of the trainset images
 
 * config/train.cfg
 
-'''
-feature_num = 500
-landmark_num = 68
-stage_num = 6
-tree_depth = 5
-tree_num_per_forest = 12
-forest_overlap = 0.3
-local_region_size = { 0.29, 0.21, 0.16, 0.12, 0.08, 0.04 }
-special_point_id = { 28, 8, 36, 45 }
-'''
+![Train_cfg](/gallary/train_cfg.png)
 
 feature_num: The randomly picked point pairs generated around the landmark
 
@@ -68,13 +56,13 @@ local_region_size: The region size to get features in each training stage
 
 special_point_id: The landmark id of up, down, left, right, used for coarse alignment
 
-##### Start Training
+#### Start Training
 
 Just run and wait (about 1h on Helen dataset and Intel core i7 4710hq)
 
 ### Running
 
-##### Code Settings
+#### Code Settings
 
 In main.cpp, comment/uncomment the main function as following:
 
@@ -86,7 +74,7 @@ The predictImage function can also have a second argument which has a type cv::R
 
 If without this second argument, the program will use OpenCV's default bounding box extracting function
 
-##### Models
+#### Models
 
 This program will use models in the following list:
 
@@ -103,3 +91,4 @@ The first three models will be generated in the training stage, if you want to u
 ### Reference
 
 * Face Alignment at 3000 FPS via Regressing Local Binary Features. CVPR 2014. Ren et al.
+* [Liblinear](https://www.csie.ntu.edu.tw/~cjlin/liblinear/). Lin et al.
